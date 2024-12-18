@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Audio Downloader</title>
+
+    <style>
+        body{
+            padding: 0;
+            margin: 0;
+            
+        }
+        form, #downloadOptions{
+            display: flex
+;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+        }
+        h1{
+            text-align: center;
+        }
+        .main{
+            margin-top: 50px;
+    min-height: 100vh;
+    background: rgb(244, 244, 244);
+    display: flex
+;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+        }
+    </style>
+</head>
+
+<body>
+<div class="main">
+    <h1>YouTube Audio Downloader</h1>
+
+    <form id="urlForm">
+        <label for="url">Enter YouTube URL:</label>
+        <input type="text" id="url" name="url" required>
+        <button type="submit">Get Bitrates</button>
+    </form>
+
+    <div id="bitrates"></div>
+    <div id="downloadOptions" style="display:none;">
+        <label for="bitrate">Select Bitrate:</label>
+        <select id="bitrate"></select>
+        <br>
+        <button id="downloadButton">Download Audio</button>
+        <div id="status"></div>
+    </div>
+
+</div>
+
+    <script>
+        // Fetch available bitrates
+        document.getElementById('urlForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const url = document.getElementById('url').value;
+
+            fetch('/get_bitrates', {
+                method: 'POST',
+                body: new URLSearchParams({ 'url': url }),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('status').innerText = data.error;
+                    document.getElementById('bitrates').innerHTML = '';
+                } else {
+                    let bitrateSelect = document.getElementById('bitrate');
+                    bitrateSelect.innerHTML = '';
+                    data.bitrates.forEach(bitrate => {
+                        let option = document.createElement('option');
+                        option.value = bitrate;
+                        option.text = `${bitrate} kbps`;
+                        bitrateSelect.appendChild(option);
+                    });
+
+                    document.getElementById('downloadOptions').style.display = 'block';
+                    document.getElementById('status').innerText = 'Select bitrate and download.';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Start the download process
+        document.getElementById('downloadButton').addEventListener('click', function() {
+            const url = document.getElementById('url').value;
+            const bitrate = document.getElementById('bitrate').value;
+            const downloadPath = document.getElementById('download_path').value;
+
+            fetch('/download', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    'url': url,
+                    'bitrate': bitrate,
+                    'download_path': downloadPath
+                }),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerText = data.message;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>
